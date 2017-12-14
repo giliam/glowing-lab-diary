@@ -42,7 +42,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
 
-    'diary'
+    'diary',
+    'api'
 ]
 
 MIDDLEWARE = [
@@ -127,6 +128,7 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = parameters.STATICFILES_DIRS if hasattr(parameters, "STATICFILES_DIRS") else (
     "assets/",
 )
+STATIC_ROOT = parameters.STATIC_ROOT if hasattr(parameters, "STATIC_ROOT") else "/var/www/example.com/static/"
 
 REST_FRAMEWORK = parameters.DEFAULT_PERMISSION_CLASSES if hasattr(parameters, "DEFAULT_PERMISSION_CLASSES") else {
     # Use Django's standard `django.contrib.auth` permissions,

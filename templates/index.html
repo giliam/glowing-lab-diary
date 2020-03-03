@@ -56,7 +56,7 @@
               <form>
                 <span class="field">
                   <label for="content">Content</label>
-                  <input type="text" v-model="content_new_message">
+                  <input type="text" v-model="contentNewMessage">
                   <button class="btn btn-success" @click.prevent="addEntry">Submit</button>
                 </span>
               </form>
@@ -70,10 +70,17 @@
                     <button v-if="entry.status" type="button" :class="'btn ' + entry.status.css_class + ' btn-sm'" @click.prevent="changeStatus(entry)">${ entry.status.content }</button>
                   </div>
                   <div>
+                    <button v-if="!isConfirmingDeletion(entry)" type="button" class="btn btn-danger btn-sm" @click.prevent="deleteEntry(entry)">Delete</button>
+                    <button v-else type="button" class="btn btn-dark btn-sm" @click.prevent="sureDeleteEntry(entry)">Sure?</button>
+                  </div>
+                  <div>
                     ${ entry.added_date }
                   </div>
                   <div>
-                    <p @click.prevent="editEntry(entry)">${ entry.comments }</p>
+                    <p @click.prevent="editEntry(entry)" v-if="isEdited(entry)">${ entry.comments }</p>
+                    <form v-else @submit.prevent="submitEditEntry">
+                      <input type="text" v-model="contentEditedMessage" style="width:100%" />
+                    </form>
                   </div>
                 </template>
               </template>
@@ -84,6 +91,22 @@
     </div>
     
     <script type="text/javascript">
+         function getCookie(name) {
+            var cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = cookies[i].trim();
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
         var app = new Vue({
           el: '#app',
           delimiters: ['${', '}'],
@@ -120,7 +143,10 @@
             }
           },
           props: {
-            content_new_message: Object
+            contentNewMessage: Object,
+            contentEditedMessage: Object,
+            currentEditedMessage: 0,
+            deletingEntry: 0,
           },
 
           methods: {
@@ -158,7 +184,6 @@
               let url = "{% url "status_change" 0 %}".replace('0', entry.id)
               axios.get(url)
               .then((response) => {
-                console.log(this)
                 this.$data.entries[entry.id].status = response.data
               })
               .catch((error) => {
@@ -167,30 +192,45 @@
             },
 
             editEntry(entry){
-              console.log(entry);
+              this.contentEditedMessage = entry.comments
+              this.currentEditedMessage = entry.id
+            },
+
+            submitEditEntry(){
+              let entry = this.$data.entries[this.currentEditedMessage]
+              let url = "{% url "entry_detail" 0 %}".replace('0', entry.id)
+              let csrftoken = getCookie('csrftoken');
+
+              let authOptions = {
+                method: 'PUT',
+                url: url,
+                data: {"comments": this.contentEditedMessage, "tags": entry.tags},
+                headers: {
+                  "X-CSRFToken": csrftoken
+                }
+              };
+              axios(authOptions).then((response) => {
+                console.log(response)
+                entry.comments = this.contentEditedMessage
+              })
+              .catch((error) => {
+                console.log(error);
+              });
+
+              this.contentEditedMessage = "";
+              this.currentEditedMessage = 0;
+            },
+
+            isEdited(entry){
+              return this.currentEditedMessage != entry.id
             },
 
             addEntry(){
-              function getCookie(name) {
-                  var cookieValue = null;
-                  if (document.cookie && document.cookie !== '') {
-                      var cookies = document.cookie.split(';');
-                      for (var i = 0; i < cookies.length; i++) {
-                          var cookie = cookies[i].trim();
-                          // Does this cookie string begin with the name we want?
-                          if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                              cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                              break;
-                          }
-                      }
-                  }
-                  return cookieValue;
-              }
               let csrftoken = getCookie('csrftoken');
               let authOptions = {
                 method: 'POST',
                 url: "{% url "entry_new" %}",
-                data: {"entry": this.content_new_message},
+                data: {"entry": this.contentNewMessage},
                 headers: {
                   "X-CSRFToken": csrftoken
                 }
@@ -213,7 +253,35 @@
               .catch((error) => {
                 console.log(error);
               });
-              <!-- this.content_new_message = "" -->
+              this.contentNewMessage = ""
+            },
+
+            deleteEntry(entry) {
+              this.deletingEntry = entry.id;
+            },
+
+            sureDeleteEntry(entry) {
+              let url = "{% url "entry_detail" 0 %}".replace('0', entry.id)
+              let csrftoken = getCookie('csrftoken');
+              let authOptions = {
+                method: 'DELETE',
+                url: url,
+                headers: {
+                  "X-CSRFToken": csrftoken
+                }
+              };
+              axios(authOptions).then((response) => {
+                delete this.$data.entries[entry.id];
+                this.$forceUpdate();
+              })
+              .catch((error) => {
+                console.log(error);
+              });
+              this.deletingEntry = 0
+            },
+
+            isConfirmingDeletion(entry) {
+              return this.deletingEntry == entry.id
             },
           }
         })

@@ -1,7 +1,10 @@
 # coding:utf-8
 
-from django.shortcuts import render, get_object_or_404
 from django.db.models import Max
+from django.conf import settings
+from django.utils.formats import date_format
+from django.shortcuts import render, get_object_or_404
+from django.views.decorators.csrf import csrf_exempt
 
 from rest_framework import generics
 from rest_framework import response
@@ -67,3 +70,22 @@ def change_status(request, entry_pk):
 
     serializer = serializers.StatusEntrySerializer(status)
     return response.Response(serializer.data)
+
+
+@api_view(["POST"])
+def entry_new(request):
+    if request.method == "POST":
+        entry_content = request.data["entry"].strip()
+        if len(entry_content) > 0:
+            entry = models.Entry()
+            entry.comments = entry_content
+            entry.status = get_object_or_404(models.StatusEntry, order=0)
+            entry.save()
+            entry.status_dict = {
+                "content": entry.status.content,
+                "css_class": entry.status.css_class,
+            }
+            entry.added_date = date_format(entry.added_date, settings.DATETIME_FORMAT)
+            serializer = serializers.EntryNewSerializer(entry)
+            return response.Response(serializer.data)
+    return response.Response({})

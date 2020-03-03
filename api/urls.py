@@ -8,6 +8,7 @@ from api import views
 urlpatterns = [
     url(r"^$", views.api_root, name="api_root"),
     url(r"^entry/list/$", views.EntryList.as_view(), name="entry_list"),
+    url(r"^entry/new/$", views.entry_new, name="entry_new"),
     url(r"^entry/(?P<pk>[0-9]+)/$", views.EntryDetail.as_view(), name="entry_detail"),
     url(r"^status/list/$", views.StatusEntryList.as_view(), name="status_list"),
     url(

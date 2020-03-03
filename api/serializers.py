@@ -22,6 +22,22 @@ class EntrySerializer(serializers.ModelSerializer):
         )
 
 
+class EntryNewSerializer(serializers.ModelSerializer):
+    status_dict = serializers.DictField()
+    added_date = serializers.CharField()
+
+    class Meta:
+        model = models.Entry
+        fields = (
+            "id",
+            "comments",
+            "status_dict",
+            "tags",
+            "added_date",
+            "updated_date",
+        )
+
+
 class TagSerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name="tag_detail", format="json")
 

@@ -51,6 +51,17 @@
               {% endfor %}
               </div>
             </div>
+            <h2>Add a message</h2>
+            <p>
+              <form>
+                <span class="field">
+                  <label for="content">Content</label>
+                  <input type="text" v-model="content_new_message">
+                  <button class="btn btn-success" @click.prevent="addEntry">Submit</button>
+                </span>
+              </form>
+            </p>
+
             <h2>Messages</h2>
             <div class="grid_entries">
               <template v-for="entry in entries">
@@ -108,6 +119,9 @@
               {% endfor %}
             }
           },
+          props: {
+            content_new_message: Object
+          },
 
           methods: {
             filterByTag(tagId){
@@ -150,15 +164,57 @@
               .catch((error) => {
                 console.log(error);
               });
-            }
+            },
 
             editEntry(entry){
               console.log(entry);
-            }
+            },
 
             addEntry(){
-              console.log(entry);
-            }
+              function getCookie(name) {
+                  var cookieValue = null;
+                  if (document.cookie && document.cookie !== '') {
+                      var cookies = document.cookie.split(';');
+                      for (var i = 0; i < cookies.length; i++) {
+                          var cookie = cookies[i].trim();
+                          // Does this cookie string begin with the name we want?
+                          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                              cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                              break;
+                          }
+                      }
+                  }
+                  return cookieValue;
+              }
+              let csrftoken = getCookie('csrftoken');
+              let authOptions = {
+                method: 'POST',
+                url: "{% url "entry_new" %}",
+                data: {"entry": this.content_new_message},
+                headers: {
+                  "X-CSRFToken": csrftoken
+                }
+              };
+              axios(authOptions).then((response) => {
+                let new_entry = response.data;
+                this.$data.entries[new_entry.id] = {
+                  comments: new_entry.comments,
+                  id: new_entry.id,
+                  added_date: new_entry.added_date,
+                  status: {
+                    content: new_entry.status_dict.content,
+                    css_class: new_entry.status_dict.css_class
+                  },
+                  tags: [],
+                  nbTagsLinkedSelected: 0,
+                }
+                this.$forceUpdate();
+              })
+              .catch((error) => {
+                console.log(error);
+              });
+              <!-- this.content_new_message = "" -->
+            },
           }
         })
     </script>

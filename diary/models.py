@@ -1,4 +1,4 @@
-#encoding:utf8
+# encoding:utf8
 from django.db import models
 
 
@@ -14,16 +14,27 @@ class Tag(DatedModel):
     name = models.CharField(max_length=150, blank=False, null=False)
 
     def __str__(self):
-        return u"#{0}".format(self.name)
+        return f"#{self.name}"
+
+
+class StatusEntry(DatedModel):
+    content = models.CharField(max_length=150, blank=False, null=False)
+    order = models.PositiveIntegerField(default=0)
+    css_class = models.CharField(max_length=150, default="btn-primary")
+
+    def __str__(self):
+        return str(self.content)
 
 
 class Entry(DatedModel):
     """
         Entry
     """
+
     comments = models.TextField(blank=False)
     tags = models.ManyToManyField(Tag, related_name="entries")
+    status = models.ForeignKey(StatusEntry, on_delete=models.SET_NULL, null=True)
 
     def __str__(self):
-        return u"Entry of {0}".format(self.added_date)
+        return f"Entry of {self.added_date}"
 

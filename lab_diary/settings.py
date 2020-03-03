@@ -130,7 +130,7 @@ STATICFILES_DIRS = parameters.STATICFILES_DIRS if hasattr(parameters, "STATICFIL
 )
 STATIC_ROOT = parameters.STATIC_ROOT if hasattr(parameters, "STATIC_ROOT") else "/var/www/example.com/static/"
 
-REST_FRAMEWORK = parameters.DEFAULT_PERMISSION_CLASSES if hasattr(parameters, "DEFAULT_PERMISSION_CLASSES") else {
+REST_FRAMEWORK = parameters.REST_FRAMEWORK if hasattr(parameters, "REST_FRAMEWORK") else {
     # Use Django's standard `django.contrib.auth` permissions,
     # or allow read-only access for unauthenticated users.
     'DEFAULT_PERMISSION_CLASSES': [

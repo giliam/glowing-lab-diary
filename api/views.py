@@ -22,7 +22,6 @@ class EntryList(generics.ListCreateAPIView):
 
     def get_serializer_context(self):
         context = super(EntryList, self).get_serializer_context()
-        print(context)
         return context
 
 

@@ -275,8 +275,9 @@
                 }
               };
               axios(authOptions).then((response) => {
-                if(response.url != authOptions.url){
+                if(response.url !== undefined && response.url != authOptions.url){
                   console.log("Error, redirection...");
+                  console.log(response.url);
                 }else{
                   let new_entry = response.data;
                   this.$data.entries[new_entry.id] = {
@@ -319,8 +320,9 @@
                 }
               };
               axios(authOptions).then((response) => {
-                if(response.url != authOptions.url){
+                if(response.url !== undefined && response.url != authOptions.url){
                   console.log("Error, redirection...");
+                  console.log(response.url);
                 }else{
                   delete this.$data.entries[entry.id];
                   this.$forceUpdate();
@@ -353,8 +355,9 @@
                 }
               };
               axios(authOptions).then((response) => {
-                if(response.url != authOptions.url){
+                if(response.url !== undefined && response.url != authOptions.url){
                   console.log("Error, redirection...");
+                  console.log(response.url);
                 }else{
                   var index = this.$data.entries[entry.id].tags.indexOf(tag_id);
                   if (index !== -1)
@@ -398,8 +401,9 @@
                 }
               };
               axios(authOptions).then((response) => {
-                if(response.url != authOptions.url){
+                if(response.url !== undefined && response.url != authOptions.url){
                   console.log("Error, redirection...");
+                  console.log(response.url);
                 }else{
                   var index = this.$data.entries[entry.id].tags.indexOf(tag_id);
                   if (index === -1)

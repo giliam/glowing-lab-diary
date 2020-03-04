@@ -111,5 +111,10 @@ form.new_message {
 /* Grid status */
 .grid_filters {
   display: grid;
+  grid-column-gap: 15px;
   grid-template-columns: 2fr 5fr;
+}
+
+.grid_filters .card-body {
+  min-height: 78px;
 }

@@ -42,7 +42,7 @@
             <h1>Dashboard</h1>
 
             <h2>Tags</h2>
-            <div class="card">
+            <div class="card card-above-title">
               <div class="card-body">
               {% for tag in tags %}
                 <button type="button" :class="'btn ' + getTagSpecificClasses({{tag.id}})" @click.prevent="filterByTag({{tag.id}})" id="button_tag_{{tag.id}}">
@@ -53,12 +53,18 @@
             </div>
             <h2>Add a message</h2>
             <p>
-              <form>
-                <span class="field">
-                  <label for="content">Content</label>
-                  <input type="text" v-model="contentNewMessage">
-                  <button class="btn btn-success" @click.prevent="addEntry">Submit</button>
-                </span>
+              <form class="new_message">
+                <div class="input-group">
+                  <select class="custom-select" v-model="tagsNewMessage">
+                    {% for tag in tags %}
+                        <option value="{{tag.id}}">{{tag}}</option>
+                    {% endfor %}
+                  </select>
+                  <input type="text" class="form-control" v-model="contentNewMessage">
+                  <div class="input-group-append">
+                    <button class="btn btn-success" @click.prevent="addEntry">Submit</button>
+                  </div>
+                </div>
               </form>
             </p>
 
@@ -70,10 +76,6 @@
                     <button v-if="entry.status" type="button" :class="'btn ' + entry.status.css_class + ' btn-sm'" @click.prevent="changeStatus(entry)">${ entry.status.content }</button>
                   </div>
                   <div>
-                    <button v-if="!isConfirmingDeletion(entry)" type="button" class="btn btn-danger btn-sm" @click.prevent="deleteEntry(entry)">Delete</button>
-                    <button v-else type="button" class="btn btn-dark btn-sm" @click.prevent="sureDeleteEntry(entry)">Sure?</button>
-                  </div>
-                  <div>
                     ${ entry.added_date }
                   </div>
                   <div>
@@ -81,6 +83,31 @@
                     <form v-else @submit.prevent="submitEditEntry">
                       <input type="text" v-model="contentEditedMessage" style="width:100%" />
                     </form>
+                  </div>
+                  <div class="small small-line">
+                    <template v-for="tag in entry.tags">
+                      <button v-if="!isConfirmingDeletionTag(tag, entry)" class="btn btn-xsm btn-dark" @click.prevent="deleteTagFromEntry(tag, entry)">${ tags[tag] }</button>
+                      <div v-else class="btn-group" role="group" aria-label="Basic example">
+                        <button class="btn btn-xsm btn-danger" @click.prevent="sureDeleteTagFromEntry(tag, entry)">Delete</button>
+                        <button class="btn btn-xsm btn-primary" @click.prevent="abortDeleteTagFromEntry(tag, entry)">Abort</button>
+                      </div>
+                    </template>
+                    <button v-if="!isAddingTagEntry(entry)" class="btn btn-xsm btn-success" @click.prevent="triggerAddTagToEntry(entry)">Add</button>
+                    <template v-else>
+                      <select class="form-control form-control-xsm notfullsize" v-model="addingTag">
+                        {% for tag in tags %}
+                            <option value="{{tag.id}}">{{tag}}</option>
+                        {% endfor %}
+                      </select>
+                      <button class="btn btn-xsm btn-success" @click.prevent="addTagToEntry(entry)">Send</button>
+                    </template>
+                  </div>
+                  <div>
+                    <button v-if="!isConfirmingDeletion(entry)" type="button" class="btn btn-dark btn-sm" @click.prevent="deleteEntry(entry)">Delete</button>
+                    <div v-else class="btn-group" role="group" aria-label="Basic example">
+                      <button type="button" class="btn btn-danger btn-sm" @click.prevent="sureDeleteEntry(entry)">Yes</button>
+                      <button class="btn btn-sm btn-primary" @click.prevent="abortDeleteEntry(entry)">No</button>
+                    </div>
                   </div>
                 </template>
               </template>
@@ -121,6 +148,12 @@
             tagsEntries: {
               {% for tag in tags.all %}{{tag.id}}: [{% for entry in tag.entries.all %}{{entry.id}}, {% endfor %}],{% endfor %}
             },
+
+            
+            // list of entries linked to tags
+            tags: {
+              {% for tag in tags.all %}{{tag.id}}: "{{tag}}",{% endfor %}
+            },
             
             // small var to avoid counting all tags selected each time
             nbTagsSelected: 0,
@@ -144,9 +177,14 @@
           },
           props: {
             contentNewMessage: Object,
+            tagsNewMessage: Object,
             contentEditedMessage: Object,
             currentEditedMessage: 0,
             deletingEntry: 0,
+            deletingTag: 0,
+            deletingTagEntry: 0,
+            addingTag: 0,
+            addTagEntry: 0,
           },
 
           methods: {
@@ -209,9 +247,10 @@
                   "X-CSRFToken": csrftoken
                 }
               };
+              let new_content = this.contentEditedMessage;
               axios(authOptions).then((response) => {
                 console.log(response)
-                entry.comments = this.contentEditedMessage
+                entry.comments = new_content
               })
               .catch((error) => {
                 console.log(error);
@@ -230,35 +269,44 @@
               let authOptions = {
                 method: 'POST',
                 url: "{% url "entry_new" %}",
-                data: {"entry": this.contentNewMessage},
+                data: {"entry": this.contentNewMessage, "tags": [parseInt(this.tagsNewMessage)]},
                 headers: {
                   "X-CSRFToken": csrftoken
                 }
               };
               axios(authOptions).then((response) => {
-                let new_entry = response.data;
-                this.$data.entries[new_entry.id] = {
-                  comments: new_entry.comments,
-                  id: new_entry.id,
-                  added_date: new_entry.added_date,
-                  status: {
-                    content: new_entry.status_dict.content,
-                    css_class: new_entry.status_dict.css_class
-                  },
-                  tags: [],
-                  nbTagsLinkedSelected: 0,
+                if(response.url != authOptions.url){
+                  console.log("Error, redirection...");
+                }else{
+                  let new_entry = response.data;
+                  this.$data.entries[new_entry.id] = {
+                    comments: new_entry.comments,
+                    id: new_entry.id,
+                    added_date: new_entry.added_date,
+                    status: {
+                      content: new_entry.status_dict.content,
+                      css_class: new_entry.status_dict.css_class
+                    },
+                    tags: new_entry.tags,
+                    nbTagsLinkedSelected: 0,
+                  }
+                  this.$forceUpdate();
                 }
-                this.$forceUpdate();
               })
               .catch((error) => {
                 console.log(error);
               });
-              this.contentNewMessage = ""
+              // this.contentNewMessage = ""
             },
 
             deleteEntry(entry) {
               this.deletingEntry = entry.id;
             },
+
+            abortDeleteEntry(entry) {
+              this.deletingEntry = 0;
+            },
+
 
             sureDeleteEntry(entry) {
               let url = "{% url "entry_detail" 0 %}".replace('0', entry.id)
@@ -271,18 +319,101 @@
                 }
               };
               axios(authOptions).then((response) => {
-                delete this.$data.entries[entry.id];
-                this.$forceUpdate();
+                if(response.url != authOptions.url){
+                  console.log("Error, redirection...");
+                }else{
+                  delete this.$data.entries[entry.id];
+                  this.$forceUpdate();
+                }
               })
               .catch((error) => {
                 console.log(error);
               });
               this.deletingEntry = 0
             },
+            
+            deleteTagFromEntry(tag, entry) {
+              this.deletingTag = tag;
+              this.deletingTagEntry = entry.id;
+            },
+            
+            abortDeleteTagFromEntry(tag, entry) {
+              this.deletingTag = 0;
+              this.deletingTagEntry = 0;
+            },
+
+            sureDeleteTagFromEntry(tag_id, entry) {
+              let url = "{% url "entry_remove_tag" 0 0 %}".replace('entry/0', 'entry/' + entry.id).replace('/0/', '/' + tag_id + '/')
+              let csrftoken = getCookie('csrftoken');
+              let authOptions = {
+                method: 'GET',
+                url: url,
+                headers: {
+                  "X-CSRFToken": csrftoken
+                }
+              };
+              axios(authOptions).then((response) => {
+                if(response.url != authOptions.url){
+                  console.log("Error, redirection...");
+                }else{
+                  var index = this.$data.entries[entry.id].tags.indexOf(tag_id);
+                  if (index !== -1)
+                    this.$data.entries[entry.id].tags.splice(index, 1);
+                  this.$forceUpdate();
+                }
+              })
+              .catch((error) => {
+                console.log(error);
+              });
+              this.deletingTag = 0
+              this.deletingTagEntry = 0
+            },
 
             isConfirmingDeletion(entry) {
               return this.deletingEntry == entry.id
             },
+
+            isAddingTagEntry(entry) {
+              return this.addTagEntry == entry.id
+            },
+
+            isConfirmingDeletionTag(tag, entry) {
+              return this.deletingTag == tag && this.deletingTagEntry == entry.id
+            },
+
+            triggerAddTagToEntry(entry) {
+              this.addingTag = 0;
+              this.addTagEntry = entry.id;
+            },
+
+            addTagToEntry(entry){
+              let tag_id = parseInt(this.addingTag, 10)
+              let url = "{% url "entry_add_tag" 0 0 %}".replace('entry/0', 'entry/' + entry.id).replace('/0/', '/' + tag_id + '/')
+              let csrftoken = getCookie('csrftoken');
+              let authOptions = {
+                method: 'GET',
+                url: url,
+                headers: {
+                  "X-CSRFToken": csrftoken
+                }
+              };
+              axios(authOptions).then((response) => {
+                if(response.url != authOptions.url){
+                  console.log("Error, redirection...");
+                }else{
+                  var index = this.$data.entries[entry.id].tags.indexOf(tag_id);
+                  if (index === -1)
+                    this.$data.entries[entry.id].tags.push(tag_id)
+                  this.$forceUpdate();
+                }
+              })
+              .catch((error) => {
+                console.log(error);
+              });
+              this.addingTag = 0
+              this.addTagEntry = 0
+            },
+
           }
         })
     </script>

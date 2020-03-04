@@ -10,6 +10,16 @@ urlpatterns = [
     url(r"^entry/list/$", views.EntryList.as_view(), name="entry_list"),
     url(r"^entry/new/$", views.entry_new, name="entry_new"),
     url(r"^entry/(?P<pk>[0-9]+)/$", views.EntryDetail.as_view(), name="entry_detail"),
+    url(
+        r"^entry/(?P<entry_pk>[0-9]+)/remove/tag/(?P<tag_pk>[0-9]+)/$",
+        views.entry_remove_tag,
+        name="entry_remove_tag",
+    ),
+    url(
+        r"^entry/(?P<entry_pk>[0-9]+)/add/tag/(?P<tag_pk>[0-9]+)/$",
+        views.entry_add_tag,
+        name="entry_add_tag",
+    ),
     url(r"^status/list/$", views.StatusEntryList.as_view(), name="status_list"),
     url(
         r"^status/change/(?P<entry_pk>[0-9]+)/$",

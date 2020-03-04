@@ -29,7 +29,8 @@ h1 {
   z-index: 1000;
   padding: 20px 0;
   overflow-x: hidden;
-  overflow-y: auto; /* Scrollable contents if viewport is shorter than content. */
+  overflow-y: auto;
+  /* Scrollable contents if viewport is shorter than content. */
   border-right: 1px solid #eee;
 }
 
@@ -41,7 +42,7 @@ h1 {
   width: 100%;
 }
 
-.sidebar .nav-item + .nav-item {
+.sidebar .nav-item+.nav-item {
   margin-left: 0;
 }
 
@@ -66,5 +67,43 @@ h1 {
 /* Grid entries */
 .grid_entries {
   display: grid;
-  grid-template-columns: 100px 100px 200px 1fr;
+  grid-template-columns: 100px 200px minmax(300px, 1fr) minmax(200px, 500px) 100px;
+}
+
+
+.btn-group-xsm>.btn,
+.btn-xsm {
+
+  padding: .15rem .25rem;
+  font-size: .675rem;
+  line-height: 1.0;
+  border-radius: .2rem;
+  margin: 0.5px;
+
+}
+
+.small-line {
+  line-height: 1;
+}
+
+.form-control-xsm {
+  height: calc(1.25em + .25rem + 2px);
+  padding: .15rem .25rem;
+  font-size: .675rem;
+  line-height: 1;
+  border-radius: .2rem;
+}
+
+.notfullsize {
+  width: auto;
+  max-width: 200px;
+}
+
+.card-above-title {
+  margin-bottom: 15px;
+}
+
+form.new_message {
+  max-width: 750px;
+  width: auto;
 }

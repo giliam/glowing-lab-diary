@@ -117,6 +117,7 @@ def entry_new(request):
                 entry.tags.add(*tags)
 
             entry.status_dict = {
+                "id": entry.status.id,
                 "content": entry.status.content,
                 "css_class": entry.status.css_class,
             }

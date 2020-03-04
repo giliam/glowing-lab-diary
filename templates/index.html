@@ -41,15 +41,30 @@
         <div class="row">
           <div class="ml-sm-auto col-md pt-3">
             <h1>Dashboard</h1>
-
-            <h2>Tags</h2>
-            <div class="card card-above-title">
-              <div class="card-body">
-              {% for tag in tags %}
-                <button type="button" :class="'btn ' + getTagSpecificClasses({{tag.id}})" @click.prevent="filterByTag({{tag.id}})" id="button_tag_{{tag.id}}">
-                  {{tag}} <span class="badge badge-light">${ tags[{{tag.id}}].nb }</span>
-                </button>
-              {% endfor %}
+            <div class="grid_filters">
+              <div>
+                <h2>Status</h2>
+                <div class="card card-above-title">
+                  <div class="card-body">
+                  {% for st in status %}
+                    <button type="button" :class="'btn btn-sm ' + getStatusSpecificClasses({{st.id}})" @click.prevent="filterByStatus({{st.id}})" id="button_status_{{st.id}}">
+                      {{st.content}} <span class="badge badge-light">${ status[{{st.id}}].nb }</span>
+                    </button>
+                  {% endfor %}
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h2>Tags</h2>
+                <div class="card card-above-title">
+                  <div class="card-body">
+                  {% for tag in tags %}
+                    <button type="button" :class="'btn ' + getTagSpecificClasses({{tag.id}})" @click.prevent="filterByTag({{tag.id}})" id="button_tag_{{tag.id}}">
+                      {{tag}} <span class="badge badge-light">${ tags[{{tag.id}}].nb }</span>
+                    </button>
+                  {% endfor %}
+                  </div>
+                </div>
               </div>
             </div>
             <h2>Add a message</h2>
@@ -72,7 +87,7 @@
             <h2>Messages</h2>
             <div class="grid_entries">
               <template v-for="entry in entries">
-                <template v-if="entry.nbTagsLinkedSelected > 0 || nbTagsSelected == 0">
+                <template v-if="isEntryTagSelected(entry) && isEntryStatusSelected(entry)">
                   <div>
                     <button v-if="entry.status" type="button" :class="'btn ' + entry.status.css_class + ' btn-sm'" @click.prevent="changeStatus(entry)">${ entry.status.content }</button>
                   </div>
@@ -140,29 +155,29 @@
           delimiters: ['${', '}'],
           data: {
             message: 'Hello Vue!',
-
-            // list of tags and their selection status
-            tagsSelected: {
-              {% for tag in tags.all %}{{tag.id}}: false,{% endfor %}
-            },
-            // list of entries linked to tags
-            tagsEntries: {
-              {% for tag in tags.all %}{{tag.id}}: [{% for entry in tag.entries.all %}{{entry.id}}, {% endfor %}],{% endfor %}
-            },
-
-            
             // list of entries linked to tags
             tags: {
               {% for tag in tags.all %}{{tag.id}}: {
                   name: "{{tag}}",
-                  nb: {{tag.entries.all|length}}
+                  nb: {{tag.entries.all|length}},
+                  entries: [{% for entry in tag.entries.all %}{{entry.id}}, {% endfor %}],
+                  selected: false
+              },
+              {% endfor %}
+            },
+
+            // list of entries linked to status
+            status: {
+              {% for st in status.all %}{{st.id}}: {
+                  name: "{{st.content}}",
+                  css_class: "{{st.css_class}}",
+                  nb: {{st.entries.all|length}},
+                  entries: [{% for entry in st.entries.all %}{{entry.id}}, {% endfor %}],
+                  selected: false,
               },
               {% endfor %}
             },
             
-            // small var to avoid counting all tags selected each time
-            nbTagsSelected: 0,
-
             // list of entries
             entries: {
               {% for entry in entries %}
@@ -171,6 +186,7 @@
                   id: {{entry.id}},
                   added_date: '{{entry.added_date}}',
                   status: {
+                    id: '{{entry.status.id}}',
                     content: '{{entry.status.content}}',
                     css_class: '{{entry.status.css_class}}'
                   },
@@ -178,12 +194,12 @@
                   nbTagsLinkedSelected: 0,
                 },
               {% endfor %}
-            }
-          },
-          props: {
-            contentNewMessage: Object,
-            tagsNewMessage: Object,
-            contentEditedMessage: Object,
+            },
+            statusSelected: 0,
+            nbTagsSelected: 0,
+            contentNewMessage: "",
+            tagsNewMessage: "",
+            contentEditedMessage: "",
             currentEditedMessage: 0,
             deletingEntry: 0,
             deletingTag: 0,
@@ -195,31 +211,45 @@
           methods: {
             filterByTag(tagId){
               // changes button status
-              this.$data.tagsSelected[tagId] = !this.$data.tagsSelected[tagId]
+              this.tags[tagId].selected = !this.tags[tagId].selected
 
               // if the tag is now selected, nbTagsSelected and nbTagsLinkedSelected is incremented
-              if( this.$data.tagsSelected[tagId] ){
-                this.$data.nbTagsSelected++
-                for (var i = 0; i < this.$data.tagsEntries[tagId].length; i++) {
-                  this.entries[this.$data.tagsEntries[tagId][i]].nbTagsLinkedSelected++;
+              if( this.tags[tagId].selected ){
+                this.nbTagsSelected++
+                for (var i = 0; i < this.tags[tagId].entries.length; i++) {
+                  this.entries[this.tags[tagId].entries[i]].nbTagsLinkedSelected++;
                 }
               }
               // otherwise, it is decremented
               else{
-                this.$data.nbTagsSelected = Math.max(this.$data.nbTagsSelected-1, 0)
-                for (var i = 0; i < this.$data.tagsEntries[tagId].length; i++) {
-                  this.entries[this.$data.tagsEntries[tagId][i]].nbTagsLinkedSelected = Math.max(this.entries[this.$data.tagsEntries[tagId][i]].nbTagsLinkedSelected-1, 0);
+                this.nbTagsSelected = Math.max(this.nbTagsSelected-1, 0)
+                for (var i = 0; i < this.tags[tagId].entries.length; i++) {
+                  this.entries[this.tags[tagId].entries[i]].nbTagsLinkedSelected = Math.max(this.entries[this.tags[tagId].entries[i]].nbTagsLinkedSelected-1, 0);
                 }
               }
             },
 
+            filterByStatus(statusId){
+              this.statusSelected = statusId == this.statusSelected ? 0 : statusId
+            },
+
             isTagSelected(tagId) {
-              return this.$data.tagsSelected[tagId]
+              return this.tags[tagId].selected
             },
 
             getTagSpecificClasses(tagId){
               if(this.isTagSelected(tagId)){
                 return "btn-primary"
+              }else {
+                return "btn-secondary"
+              }
+            },
+
+            getStatusSpecificClasses(statusId){
+              if(this.statusSelected == statusId){
+                return this.status[statusId].css_class
+              }else{
+                return this.status[statusId].css_class.replace("btn-", "btn-outline-")
               }
             },
 
@@ -227,7 +257,9 @@
               let url = "{% url "status_change" 0 %}".replace('0', entry.id)
               axios.get(url)
               .then((response) => {
+                this.status[this.entries[entry.id].status.id].nb--
                 this.entries[entry.id].status = response.data
+                this.status[this.entries[entry.id].status.id].nb++
                 this.$forceUpdate();
               })
               .catch((error) => {
@@ -255,7 +287,8 @@
               };
               let new_content = this.contentEditedMessage;
               axios(authOptions).then((response) => {
-                entry.comments = new_content
+                this.entries[entry.id].comments = new_content
+                
               })
               .catch((error) => {
                 console.log(error);
@@ -291,6 +324,7 @@
                     id: new_entry.id,
                     added_date: new_entry.added_date,
                     status: {
+                      id: new_entry.status_dict.id,
                       content: new_entry.status_dict.content,
                       css_class: new_entry.status_dict.css_class
                     },
@@ -299,8 +333,9 @@
                   }
                   new_entry.tags.forEach(tag => {
                     this.tags[tag].nb++
-                    this.tagsEntries[tag].push(new_entry.id)
+                    this.tags[tag].entries.push(new_entry.id)
                   })
+                  this.status[new_entry.status_dict.id].nb++
                   this.$forceUpdate();
                 }
               })
@@ -336,11 +371,12 @@
                   console.log(response.url);
                 }else{
                   let tags = this.entries[entry.id].tags;
+                  this.status[this.entries[entry.id].status.id].nb--
                   tags.forEach(tag => {
                     this.tags[tag].nb--
-                    let indexTagEntries = this.tagsEntries[tag].indexOf(entry.id);
+                    let indexTagEntries = this.tags[tag].entries.indexOf(entry.id);
                     if (indexTagEntries !== -1){
-                      this.tagsEntries[tag].splice(indexTagEntries, 1);
+                      this.tags[tag].entries.splice(indexTagEntries, 1);
                     }
                   })
                   delete this.entries[entry.id];
@@ -383,9 +419,9 @@
                     this.entries[entry.id].tags.splice(index, 1);
                     this.tags[tag_id].nb--
                     
-                    let indexTagEntries = this.tagsEntries[tag_id].indexOf(entry.id);
+                    let indexTagEntries = this.tags[tag_id].entries.indexOf(entry.id);
                     if (indexTagEntries !== -1){
-                      this.tagsEntries[tag_id].splice(indexTagEntries, 1);
+                      this.tags[tag_id].entries.splice(indexTagEntries, 1);
                     }
                   }
                   this.$forceUpdate();
@@ -435,7 +471,7 @@
                   if (index === -1){
                     this.tags[tag_id].nb++
                     this.entries[entry.id].tags.push(tag_id)
-                    this.tagsEntries[tag_id].push(entry.id);
+                    this.tags[tag_id].entries.push(entry.id);
                   }
                   this.$forceUpdate();
                 }
@@ -445,6 +481,14 @@
               });
               this.addingTag = 0
               this.addTagEntry = 0
+            },
+
+            isEntryStatusSelected(entry) {
+              return this.statusSelected == 0 || entry.status.id == this.statusSelected
+            },
+
+            isEntryTagSelected(entry) {
+              return entry.nbTagsLinkedSelected > 0 || this.nbTagsSelected == 0
             },
 
           }

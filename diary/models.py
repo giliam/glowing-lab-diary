@@ -33,7 +33,9 @@ class Entry(DatedModel):
 
     comments = models.TextField(blank=False)
     tags = models.ManyToManyField(Tag, related_name="entries")
-    status = models.ForeignKey(StatusEntry, on_delete=models.SET_NULL, null=True)
+    status = models.ForeignKey(
+        StatusEntry, on_delete=models.SET_NULL, null=True, related_name="entries"
+    )
 
     def __str__(self):
         return f"Entry of {self.added_date}"

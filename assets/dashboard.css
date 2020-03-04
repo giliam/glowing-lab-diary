@@ -107,3 +107,9 @@ form.new_message {
   max-width: 750px;
   width: auto;
 }
+
+/* Grid status */
+.grid_filters {
+  display: grid;
+  grid-template-columns: 2fr 5fr;
+}

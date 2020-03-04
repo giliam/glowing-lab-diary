@@ -28,6 +28,10 @@ Run!
 python manage.py runserver
 ```
 
-## What does it look like?
+## How to start
+
+Log in to the admin interface (usually http://localhost:8000/admin/), create a few tags, at least one status with ID 0 and you're ready!
+
+# What does it look like?
 
 ![Homepage example](https://github.com/giliam/glowing-lab-diary/blob/master/docs/example.png)

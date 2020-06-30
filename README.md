@@ -6,6 +6,8 @@
 - Django
 - Django REST
 
+The library also uses **Vuejs**.
+
 ## How to run
 
 Create a virtual env with python 3.7 and install requirements.

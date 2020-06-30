@@ -173,7 +173,7 @@
                   css_class: "{{st.css_class}}",
                   nb: {{st.entries.all|length}},
                   entries: [{% for entry in st.entries.all %}{{entry.id}}, {% endfor %}],
-                  selected: false,
+                  selected: {% if st.ignored_by_default %}false{% else %}true{% endif %},
               },
               {% endfor %}
             },
@@ -195,7 +195,6 @@
                 },
               {% endfor %}
             },
-            statusSelected: 0,
             nbTagsSelected: 0,
             contentNewMessage: "",
             tagsNewMessage: "",
@@ -230,7 +229,12 @@
             },
 
             filterByStatus(statusId){
-              this.statusSelected = statusId == this.statusSelected ? 0 : statusId
+              // ignore if selected
+              if( this.status[statusId]["selected"] === true ){
+                this.status[statusId]["selected"] = false;
+              } else {
+                this.status[statusId]["selected"] = true;
+              }
             },
 
             isTagSelected(tagId) {
@@ -246,7 +250,7 @@
             },
 
             getStatusSpecificClasses(statusId){
-              if(this.statusSelected == statusId){
+              if(this.status[statusId]["selected"] === true){
                 return this.status[statusId].css_class
               }else{
                 return this.status[statusId].css_class.replace("btn-", "btn-outline-")
@@ -484,7 +488,7 @@
             },
 
             isEntryStatusSelected(entry) {
-              return this.statusSelected == 0 || entry.status.id == this.statusSelected
+              return this.status[entry.status.id]["selected"]
             },
 
             isEntryTagSelected(entry) {

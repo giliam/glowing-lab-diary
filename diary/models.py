@@ -20,6 +20,7 @@ class Tag(DatedModel):
 class StatusEntry(DatedModel):
     content = models.CharField(max_length=150, blank=False, null=False)
     order = models.PositiveIntegerField(default=0)
+    ignored_by_default = models.BooleanField(default=False)
     css_class = models.CharField(max_length=150, default="btn-primary")
 
     def __str__(self):
